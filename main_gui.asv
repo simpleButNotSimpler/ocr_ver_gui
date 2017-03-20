@@ -47,5 +47,3 @@ function savelandmark_button_Callback(hObject, eventdata, handles)
 handles.landmark_panel.Visible = 'off';
 pos = handles.landmark_panel.Position;
 posnew = handles.magview_panel.Position;
-handles.magview_panel.Position = [pos(1) pos(2) posnew(3) posnew(4)];
-handles.magview_panel.Visible = 'on';
