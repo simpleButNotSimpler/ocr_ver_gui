@@ -41,7 +41,6 @@ function browse_Callback(hObject, eventdata, handles)
 % --- Executes on button press in nextbutton.
 function nextbutton_Callback(hObject, eventdata, handles)
 
-
 % --- Executes on button press in savelandmark_button.
 function savelandmark_button_Callback(hObject, eventdata, handles)
 handles.landmark_panel.Visible = 'off';
