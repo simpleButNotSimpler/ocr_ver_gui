@@ -24,17 +24,7 @@ end
 function main_gui_OpeningFcn(hObject, eventdata, handles, varargin)
 % Choose default command line output for main_gui
 handles.output = hObject;
-im = bgimage();
 
-imshow(im, 'Parent', handles.landmark1_view);
-imshow(im, 'Parent', handles.landmark2_view);
-imshow(im, 'Parent', handles.landmark3_view);
-imshow(im, 'Parent', handles.landmark4_view);
-imshow(im, 'Parent', handles.landmark5_view);
-imshow(im, 'Parent', handles.landmark6_view);
-imshow(im, 'Parent', handles.landmark7_view);
-imshow(im, 'Parent', handles.landmark8_view);
-handles.landmark_background = im;
 
 % Update handles structure
 guidata(hObject, handles);
@@ -45,43 +35,102 @@ function varargout = main_gui_OutputFcn(hObject, eventdata, handles)
 % Get default command line output from handles structure
 varargout{1} = handles.output;
 
+function pos = getPosition(h)
+row = 8;
+pos = ones(8, 4);
 
-% --- Executes on button press in browse.
-function browse_Callback(hObject, eventdata, handles)
+for t=1:row
+   pos(t, :) = h(t).Position; 
+end
 
-% --- Executes on button press in nextbutton.
-function nextbutton_Callback(hObject, eventdata, handles)
-
-% --- Executes on button press in savelandmark_button.
-function savelandmark_button_Callback(hObject, eventdata, handles)
-handles.landmark_panel.Visible = 'off';
-pos = handles.landmark_panel.Position;
-posnew = handles.magview_panel.Position;
-handles.magview_panel.Position = [pos(1) pos(2) posnew(3) posnew(4)];
-handles.magview_panel.Visible = 'on';
+    
+  
 
 
-function im = bgimage()
-    im = ones(140, 140, 3);
-    im(:,:, 1) = 0.06;
-    im(:,:, 3) = 0.06;
-    im(:,:, 2) = 0.62;
-    
-    im(1:140, [60 80], 1) = 1;
-    im([60 80], 1:140, 1) = 1;
-    
-    im(1:140, [60 80], 2) = 1;
-    im([60 80], 1:140, 2) = 1;
-    
-    im(1:140, [60 80], 3) = 1;
-    im([60 80], 1:140, 3) = 1;
-    
-    %filling
-    im(60:80, 60:80, 1) = 1;
-    im(60:80, 60:80, 1) = 1;
-    
-    im(1:140, [60 80], 2) = 1;
-    im([60 80], 60:80, 2) = 1;
-    
-    im(60:80, [60 80], 3) = 1;
-    im([60 80], 60:80, 3) = 1;
+% --- Executes on button press in nextbtn.
+function nextbtn_Callback(hObject, eventdata, handles)
+% hObject    handle to nextbtn (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+%check whether or not the current image is the last
+index = handles.fileindex_current + 1;
+if index > handles.fileindex_max
+   set(handles.nextbtn, 'Enable', 'off');
+   return; 
+end
+handles.fileindex_current = index;
+
+%diplay the next image
+setView(hObject, handles);
+
+guidata(hObject, handles);
+
+
+
+% --- Executes on button press in outputfolderbtn.
+function outputfolderbtn_Callback(hObject, eventdata, handles)
+% hObject    handle to outputfolderbtn (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+output_folder_name = uigetdir('C:\');
+%stop if the user press cancel or close the dialog box
+if output_folder_name == 0
+    return;
+end
+
+handles.output_folder_name = output_folder_name;
+set(handles.outputfolderbtn, 'Enable', 'off');
+
+initView(hObject, handles);
+handles = guidata(hObject);
+
+
+guidata(hObject, handles);
+
+
+% --- Executes on button press in inputfolderbtn.
+function inputfolderbtn_Callback(hObject, eventdata, handles)
+% hObject    handle to inputfolderbtn (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+input_folder_name = uigetdir('C:\Users\kkmlover\Documents\DJIMY\WORK\temp');
+%stop if the user press cancel or close the dialog box
+if input_folder_name == 0
+    return;
+end
+
+handles.input_folder_name = input_folder_name;
+
+set(handles.inputfolderbtn, 'Enable', 'off');
+set(handles.outputfolderbtn, 'Enable', 'on');
+guidata(hObject, handles);
+
+%function to initialize the parameters
+function initView(hObject, handles)
+src_im = dir(strcat(handles.input_folder_name, '\*_bw.bmp'));  % the folder in which ur images exists
+src_anchor = dir(strcat(handles.input_folder_name, '\*_info.txt'));
+
+handles.src_im = src_im;
+handles.src_anchor = src_anchor;
+handles.fileindex_max = length(src_im);
+handles.fileindex_current = 1;
+
+setView(hObject, handles);
+handles = guidata(hObject);
+
+guidata(hObject, handles);
+
+function setView(hObject, handles)
+%display the image at fileindex_current
+index = handles.fileindex_current;
+fname = fullfile(handles.input_folder_name, handles.src_im(index).name);
+im = imread(fname);
+imshow(im, 'Parent', handles.fullimage_axes);
+
+%increment the current file position
+guidata(hObject, handles);
+
+
