@@ -19,7 +19,6 @@ else
 end
 % End initialization code - DO NOT EDIT
 
-
 % --- Executes just before main_gui is made visible.
 function main_gui_OpeningFcn(hObject, eventdata, handles, varargin)
 % Choose default command line output for main_gui
@@ -28,18 +27,14 @@ handles.output = hObject;
 %create array of handles for the landmark views
 anchor_axes = gobjects(1, 8);
 anchor_axes(1) = handles.landmark1_view;
-anchor_axes(2) = handles.landmark2_view;
-anchor_axes(3) = handles.landmark3_view;
-anchor_axes(4) = handles.landmark4_view;
-anchor_axes(5) = handles.landmark5_view;
-anchor_axes(6) = handles.landmark6_view;
-anchor_axes(7) = handles.landmark7_view;
+anchor_axes(2) = handles.landmark3_view;
+anchor_axes(3) = handles.landmark5_view;
+anchor_axes(4) = handles.landmark7_view;
+anchor_axes(5) = handles.landmark2_view;
+anchor_axes(6) = handles.landmark4_view;
+anchor_axes(7) = handles.landmark6_view;
 anchor_axes(8) = handles.landmark8_view;
 handles.anchor_axes = anchor_axes;
-
-%rectangle objects for the main gui and for the anchor_axes
-handles.main_anchors_rect = gobjects(1, 8);
-handles.single_anchor_rect = gobjects(1, 8);
 
 handles.crop_pos = ones(8, 4);
 handles.main_pos = ones(8, 4);
@@ -47,18 +42,19 @@ handles.main_pos = ones(8, 4);
 % Update handles structure
 guidata(hObject, handles);
 
-
 % --- Outputs from this function are returned to the command line.
 function varargout = main_gui_OutputFcn(hObject, eventdata, handles) 
 % Get default command line output from handles structure
 varargout{1} = handles.output;   
-
 
 % --- Executes on button press in nextbtn.
 function nextbtn_Callback(hObject, eventdata, handles)
 % hObject    handle to nextbtn (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+
+%save the anchors positions
+savePosition(hObject, handles);
 
 %check whether or not the current image is the last
 index = handles.fileindex_current + 1;
@@ -75,10 +71,9 @@ fclose(fileid);
 
 %diplay the next image
 setView(hObject, handles);
+handles = guidata(hObject);
 
 guidata(hObject, handles);
-
-
 
 % --- Executes on button press in outputfolderbtn.
 function outputfolderbtn_Callback(hObject, eventdata, handles)
@@ -86,7 +81,7 @@ function outputfolderbtn_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-output_folder_name = uigetdir('C:\');
+output_folder_name = uigetdir('D:\DJIMY\log0');
 %stop if the user press cancel or close the dialog box
 if output_folder_name == 0
     return;
@@ -101,14 +96,13 @@ handles = guidata(hObject);
 
 guidata(hObject, handles);
 
-
 % --- Executes on button press in inputfolderbtn.
 function inputfolderbtn_Callback(hObject, eventdata, handles)
 % hObject    handle to inputfolderbtn (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-input_folder_name = uigetdir('C:\Users\kkmlover\Documents\DJIMY\WORK\temp');
+input_folder_name = uigetdir('D:\DJIMY\bw\bmp_0');
 %stop if the user press cancel or close the dialog box
 if input_folder_name == 0
     return;
@@ -152,7 +146,8 @@ index = handles.fileindex_current;
 fname = fullfile(handles.input_folder_name, handles.src_im(index).name);
 im = imread(fname);
 handles.current_im = im;
-imshow(im, 'Parent', handles.fullimage_axes);
+h = imshow(im, 'Parent', handles.fullimage_axes);
+h.HitTest = 'off';
 set(handles.imfile, 'String', handles.src_im(index).name);
 counter = strcat(num2str(index), '/', num2str(handles.fileindex_max));
 set(handles.filecounter, 'String', counter);
@@ -173,26 +168,45 @@ set(handles.posfile, 'String', filename);
 %center points of the anchors
 centerpoints = pointsFromFile(filepath);
 %set the position of the draggables on the main image
-main_pos = [centerpoints-16 ones(8, 1)*32 ones(8, 1)*32];
+main_pos = centerpoints-16;
 %set the position of the draggables on the auxiliary views
-crop_pos = [centerpoints-50 ones(8, 1)*100 ones(8, 1)*100];
+crop_pos = centerpoints-50;
+axislimit = [centerpoints-50 centerpoints+50];
+xlimit = axislimit(:, [1 3]);
+ylimit = axislimit(:, [2 4]);
 
-handles.rect_pos = crop_pos;
+handles.crop_pos = crop_pos;
 handles.main_pos = main_pos;
+handles.centerpoints = centerpoints;
 
 im = handles.current_im; %current image
 h_axes = handles.anchor_axes; %anchor axes object array
-main_rect = handles.main_anchors_rect; %main anchor rect object array
-aux_rect = handles.single_anchor_rect; % auxilliary anchor rect object array
+%rectangle objects for the main gui and for the anchor_axes
+main_anchors_rect = gobjects(1, 8);
+single_anchor_rect = gobjects(1, 8);
 
-
+%plot rectangle on main image
+axes(handles.fullimage_axes);
 for t=1:8
    %build the rectangle
-   imshow(imcrop(im, crop_pos(t, :)), 'Parent', h_axes(t));
-   axes(h_axes(t));
-   aux_rect(t) = rectangle('Position', [36 36 32 32], 'FaceColor', 'r', 'Curvature', [1 1], 'EdgeColor', 'r');
+   main_anchors_rect(t) = rectangle('Position', [main_pos(t, :) 33 33], 'FaceColor', 'r', 'Curvature', [1 1], 'EdgeColor', 'r');
+    main_anchors_rect(t).HitTest = 'off';
 end
-draggable(aux_rect);
+% draggable(main_rect);
+handles.main_anchors_rect = main_anchors_rect;
+
+%plot on auxilliary axis
+for t=1:8
+   %build the rectangle
+   axes(h_axes(t));
+   imshow(im, 'Parent', h_axes(t)); %plot the image
+   h_axes(t).XLim = xlimit(t, :);
+   h_axes(t).YLim = ylimit(t, :);
+   single_anchor_rect(t) = rectangle('Position', [main_pos(t, :) 33 33], 'FaceColor', 'r', 'EdgeColor', 'r', 'Curvature', [1 1]);
+   set(ancestor(handles.anchor_axes(t), 'figure'),'KeyPressFcn', @move_rectangle);
+end
+handles.single_anchor_rect = single_anchor_rect;
+draggable(single_anchor_rect);
 
 % Update handles structure
 guidata(hObject, handles);
@@ -208,15 +222,43 @@ function savePosition(hObject, handles)
 %verify that at least one anchor position has changed
 
 %get the anchor positions
-pos = ones(8, 3);
+pos = ones(8, 2);
 for t=1:8
     temp = handles.single_anchor_rect(t).Position;
-    pos(t, :) = [t temp(1) temp(2)];
+    pos(t, :) = [temp(1) temp(2)];
 end
+
+firstcol = 1:8;
+pos = [firstcol' pos+15];
+
 %output the positions to a file in the output folder
 filename = handles.src_anchor_pos(handles.fileindex_current).name;
 filepath = fullfile(handles.output_folder_name, filename);
-fileid = fopen(filepath, 'a');
+fileid = fopen(filepath, 'w');
 fprintf(fileid, '%s\r\n', '[ Anchor Points ]');
-fprintf(fileid, ' %d : (  %.1f ,  %.1f )\r\n', pos(:, 1), pos(:, 2), pos(:, 3));
 fclose(fileid);
+fileid = fopen(filepath, 'a');
+fprintf(fileid, ' %d : (  %6.1f ,  %6.1f )\r\n', pos');
+fclose(fileid);
+
+function move_rectangle(hObject, eventdata)
+%set(h_fig,'KeyPressFcn',@(h_obj,evt) disp(evt.Key));
+% Figure keypressfcn
+S = gco;
+if ~strcmp(S.Type, 'rectangle')
+    return;
+end
+P = get(S,'position');
+step = 0.5;
+switch eventdata.Key
+    case 'rightarrow'
+        set(S,'pos',P+[step 0 0 0])
+    case 'leftarrow'
+        set(S,'pos',P+[-step 0 0 0])
+    case 'uparrow'
+        set(S,'pos',P+[0 -step 0 0])
+    case 'downarrow'
+        set(S,'pos',P+[0 step 0 0])
+    otherwise  
+end
+
