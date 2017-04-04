@@ -176,26 +176,25 @@ filepath = fullfile(handles.input_folder_name, filename);
 set(handles.posfile, 'String', filename);
 %center points of the anchors
 centerpoints = pointsFromFile(filepath);
-centerpoints = centerpoints + 0.5;
+centerpoints = centerpoints + 1;
+
 
 %set the position of the draggables on the main image
-center_shift = 16; %distance of left corner from the center point
+center_shift = 16.5; %distance of left corner from the center point
 handles.center_shift = center_shift;
-rect_width = 2*center_shift + 1;
+rect_width = 2*center_shift;
 main_pos = centerpoints-center_shift;
 
 %set the position of the draggables on the auxiliary views
-crop_pos = centerpoints-50;
 axislimit = [centerpoints-50 centerpoints+50];
 xlimit = axislimit(:, [1 3]);
 ylimit = axislimit(:, [2 4]);
 
-handles.crop_pos = crop_pos;
 handles.main_pos = main_pos;
 handles.centerpoints = centerpoints;
-
 im = handles.current_im; %current image
 h_axes = handles.anchor_axes; %anchor axes object array
+
 %rectangle objects for the main gui and for the anchor_axes
 main_anchors_rect = gobjects(1, 8);
 single_anchor_rect = gobjects(1, 8);
@@ -214,10 +213,15 @@ handles.main_anchors_rect = main_anchors_rect;
 for t=1:8
    %build the rectangle
    axes(h_axes(t));
+   cla
    imshow(im, 'Parent', h_axes(t)); %plot the image
    h_axes(t).XLim = xlimit(t, :);
    h_axes(t).YLim = ylimit(t, :);
    single_anchor_rect(t) = rectangle('Position', [main_pos(t, :) rect_width rect_width], 'FaceColor', 'r', 'EdgeColor', 'r', 'Curvature', [1 1]);
+%    hold on;
+%    plot([centerpoints(t, 1)-1 centerpoints(t, 1)-1], [centerpoints(t, 2)-1 - center_shift centerpoints(t, 2)-1 + center_shift]);
+%    plot([centerpoints(t, 1)-1-center_shift centerpoints(t, 1)-1+center_shift], [centerpoints(t, 2)-1 centerpoints(t, 2)-1]);
+%    plot(centerpoints(t, 1)-1, centerpoints(t, 2)-1);
    set(ancestor(handles.anchor_axes(t), 'figure'),'KeyPressFcn', @move_rectangle);
 end
 handles.single_anchor_rect = single_anchor_rect;
@@ -234,8 +238,6 @@ pos = [file{1, 2} file{1, 3}];
 fclose(fileid);
 
 function savePosition(hObject, handles)
-%verify that at least one anchor position has changed
-
 %get the anchor positions
 pos = ones(8, 2);
 for t=1:8
@@ -244,7 +246,10 @@ for t=1:8
 end
 
 firstcol = 1:8;
-pos = [firstcol' pos+15];
+pos = [firstcol' pos+handles.center_shift - 1];
+
+%verify that at least one anchor position has changed
+
 
 %output the positions to a file in the output folder
 filename = handles.src_anchor_pos(handles.fileindex_current).name;

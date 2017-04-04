@@ -64,7 +64,7 @@ if index > handles.fileindex_max
 end
 handles.fileindex_current = index;
 
-%save update the index file
+%save and update the index file
 fileid = fopen(fullfile(handles.input_folder_name, 'config.txt'), 'w');
 fprintf(fileid, '%d', index);
 fclose(fileid);
@@ -81,7 +81,7 @@ function outputfolderbtn_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-output_folder_name = uigetdir('D:\DJIMY\log0');
+output_folder_name = uigetdir('C:\');
 %stop if the user press cancel or close the dialog box
 if output_folder_name == 0
     return;
@@ -101,7 +101,7 @@ function inputfolderbtn_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-input_folder_name = uigetdir('D:\DJIMY\bw\bmp_0');
+input_folder_name = uigetdir('C:\');
 %stop if the user press cancel or close the dialog box
 if input_folder_name == 0
     return;
@@ -174,14 +174,17 @@ function setDraggables(hObject, handles)
 filename = handles.src_anchor_pos(handles.fileindex_current).name;
 filepath = fullfile(handles.input_folder_name, filename);
 set(handles.posfile, 'String', filename);
+
 %center points of the anchors
-centerpoints = pointsFromFile(filepath);
-centerpoints = centerpoints + 0.5;
+refpoints = pointsFromFile(filepath);
+im1 = handles.current_im;
+im1 = getmorph(im1, refpoints);
+centerpoints = getcenterpoints(im1, refpoints);
 
 %set the position of the draggables on the main image
-center_shift = 16; %distance of left corner from the center point
+center_shift = 16.5; %distance of left corner from the center point
 handles.center_shift = center_shift;
-rect_width = 2*center_shift + 1;
+rect_width = 2*center_shift;
 main_pos = centerpoints-center_shift;
 
 %set the position of the draggables on the auxiliary views
@@ -212,6 +215,7 @@ handles.main_anchors_rect = main_anchors_rect;
 for t=1:8
    %build the rectangle
    axes(h_axes(t));
+   cla
    imshow(im, 'Parent', h_axes(t)); %plot the image
    h_axes(t).XLim = xlimit(t, :);
    h_axes(t).YLim = ylimit(t, :);
@@ -232,8 +236,6 @@ pos = [file{1, 2} file{1, 3}];
 fclose(fileid);
 
 function savePosition(hObject, handles)
-%verify that at least one anchor position has changed
-
 %get the anchor positions
 pos = ones(8, 2);
 for t=1:8
@@ -242,7 +244,10 @@ for t=1:8
 end
 
 firstcol = 1:8;
-pos = [firstcol' pos+handles.center_shift - 0.5];
+pos = [firstcol' pos+handles.center_shift];
+
+%verify that at least one anchor position has changed
+
 
 %output the positions to a file in the output folder
 filename = handles.src_anchor_pos(handles.fileindex_current).name;
@@ -251,7 +256,7 @@ fileid = fopen(filepath, 'w');
 fprintf(fileid, '%s\r\n', '[ Anchor Points ]');
 fclose(fileid);
 fileid = fopen(filepath, 'a');
-fprintf(fileid, ' %d : (  %6.1f ,  %6.1f )\r\n', pos');
+fprintf(fileid, ' %d : (  %6.1f , %6.1f )\r\n', pos');
 fclose(fileid);
 
 function move_rectangle(hObject, eventdata)
